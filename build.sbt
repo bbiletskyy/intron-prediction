@@ -8,5 +8,4 @@ releaseSettings
 
 scalariformSettings
 
-
 fork in run := true

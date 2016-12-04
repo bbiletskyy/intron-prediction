@@ -4,33 +4,35 @@
 Distributed Machile Learning System for intron-exon predictioin.
 
 ## How to run
-1. rename `/data/exons.txt.sample` to `/data/exons.txt`
-2.   rename `/data/genes.txt.sample` to `/data/genes.txt`
-3. `sbt run`
+- `sbt run`
+
+## How to test
+- `sbt test`
 
 ## Data
 
 Application depends on 2 data files
-- `/data/exons.txt`
-- `/data/genes.txt`
+- `exons.txt`
+- `genes.txt`
 
 ### Dummy Data
-Dummy data is stored in `data/exons.txt.sample` and `/data/genes.txt.sample`
+Dummy data is stored in `/src/test/resources/data/exons.sample` and `/src/test/resources/data/genes.sample`
 
 ### Data Download
-You can download end put the extracted files the `/data` folder:
+You can download and extracted files:
 - human genome exon sequences with metadata [exons.txt](https://drive.google.com/file/d/0BzlYsyqnvqi3MllabFYzckVCdmc/view?usp=sharing)
 - human genome gene sequences with metadata [genes.txt](https://drive.google.com/file/d/0BzlYsyqnvqi3SVpTNmEydTYyaDQ/view?usp=sharing)
 
 
 ### Data Generation
 You can generate data files yourself:
+
 1. Navigate to http://www.ensembl.org/biomart/martview/
 2. In `- CHOOSE DATABASE -` select `Ensembl Genes 86`
 3. In `- CHOOSE DATASET - ` select `Homo sapiens genes (GRCh38.p7)`
 4. Click `Attributes`
 5. Select `Sequences`
-6. Expand  `Sequences` end select `Unspliced (Gene)` or `Exon sequences`
+6. Expand  `Sequences` and select `Unspliced (Gene)` or `Exon sequences`
 7. Expand  `Heder Informations` end select the following attributes preserving the order:
   1. Ensembl Gene ID
   2. Chromosome Name
@@ -46,6 +48,7 @@ You can generate data files yourself:
   12. Ensembl Exon ID
   13. Exon Chr Start (bp)
   14. Exon Chr End (bp)
-  15. Exon sequences (for `exons.txt`) / Unspliced (Gene) (for `genes.txt`)
+  15. Exon sequences (for `exons`) / Unspliced (Gene) (for `genes`)
+
 
 

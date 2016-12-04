@@ -4,7 +4,6 @@ import org.apache.spark.SparkContext
 import org.scalatest.{ BeforeAndAfterAll, FlatSpec }
 
 class DataSpec extends FlatSpec with BeforeAndAfterAll {
-
   var sc: SparkContext = _
   val ExonsFilePath: String = getClass.getResource("/data/exons.sample").toString
   val GenesFilePath: String = getClass.getResource("/data/genes.sample").toString

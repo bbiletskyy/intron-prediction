@@ -1,7 +1,6 @@
 name := """intron-prediction"""
 
-// 2.11 doesn't seem to work
-scalaVersion := "2.10.6"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Dependencies.sparkHadoop
 

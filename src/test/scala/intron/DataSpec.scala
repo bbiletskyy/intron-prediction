@@ -19,7 +19,7 @@ class DataSpec extends FlatSpec with BeforeAndAfterAll {
   }
 
   "Data" should "get genes correctly" in {
-    assert(Data.getGenes(sc, GenesFilePath).count() == 11)
+    assert(Data.getGenesWithoutExons(sc, GenesFilePath).count() == 11)
   }
 
   "Data" should "get exons correctly" in {
@@ -29,7 +29,7 @@ class DataSpec extends FlatSpec with BeforeAndAfterAll {
   "Data" should "be aligned between genes and exons" in {
     val exons = Data.getExons(sc, ExonsFilePath)
 
-    assert(Data.getGenes(sc, GenesFilePath).takeSample(true, 10).forall { gene =>
+    assert(Data.getGenesWithoutExons(sc, GenesFilePath).takeSample(true, 10).forall { gene =>
       val geneExons = exons.filter(_.geneId == gene.geneId).collect()
       geneExons.forall(geneExon => gene.sequence.contains(geneExon.sequence))
     })

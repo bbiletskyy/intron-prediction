@@ -1,10 +1,12 @@
 # Intron Prediction
 
 ## Description
-Distributed Machile Learning System for intron-exon predictioin.
+Distributed Machile Learning System for intron-exon predictioin in human DNA.
 
 ## How to run
-- `sbt run`
+Application depends on 2 data files (see below in `Data` section).
+- `sbt run` if data are located inside `./data/` directory
+- `sbt "run path/to/data/dir"` to set the path to the data directory
 
 ## How to test
 - `sbt test`
@@ -15,17 +17,19 @@ Application depends on 2 data files
 - `exons.txt`
 - `genes.txt`
 
-### Dummy Data
-Dummy data is stored in `/src/test/resources/data/exons.sample` and `/src/test/resources/data/genes.sample`
+See below how can you obtain them.
+
+### Dummy Test Data
+- `/src/test/resources/data/exons.sample`
+- `/src/test/resources/data/genes.sample`
 
 ### Data Download
 You can download and extracted files:
 - human genome exon sequences with metadata [exons.txt](https://drive.google.com/file/d/0BzlYsyqnvqi3MllabFYzckVCdmc/view?usp=sharing)
 - human genome gene sequences with metadata [genes.txt](https://drive.google.com/file/d/0BzlYsyqnvqi3SVpTNmEydTYyaDQ/view?usp=sharing)
 
-
 ### Data Generation
-You can generate data files yourself:
+You can generate data from eENSEMBL files yourself:
 
 1. Navigate to http://www.ensembl.org/biomart/martview/
 2. In `- CHOOSE DATABASE -` select `Ensembl Genes 86`
@@ -33,7 +37,7 @@ You can generate data files yourself:
 4. Click `Attributes`
 5. Select `Sequences`
 6. Expand  `Sequences` and select `Unspliced (Gene)` or `Exon sequences`
-7. Expand  `Heder Informations` end select the following attributes preserving the order:
+7. Expand  `Heder Informations` end select the following attributes preserving the order, so that the left panel looks like:
   1. Ensembl Gene ID
   2. Chromosome Name
   3. Gene Start (bp)

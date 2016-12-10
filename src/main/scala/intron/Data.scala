@@ -8,60 +8,66 @@ object Data {
   val ExonsFileName = "exons.txt"
   val GenesFileName = "genes.txt"
 
-  case class Exon(exonId: String, geneId: String, sequence: String)
-  case class Gene(geneId: String, chromosomeName: String, sequence: String, exons: Seq[Exon]=Nil, exonIds: Seq[String] = Nil)
-
-  def main(args: Array[String]) {
-    val dataPath = if (args.length == 0) {
-      println(
-        s"""Data folder was not specified, setting to default: ${DefaultDataPath}.
-          |To specify data folder run as: sbt "run path/to/data" """.stripMargin)
-      DefaultDataPath
-    } else {
-      args(0)
-    }
-    val genesFilePath = dataPath + "/" + GenesFileName
-    val exonsFilePath = dataPath + "/" + ExonsFileName
-    val sc = new SparkContext("local[4]", "intron-prediction")
-    val dirtyGenes = getGenes(sc, genesFilePath, exonsFilePath)
-    val corruptGenes = dirtyGenes.filter(g => g.exons.map(_.exonId).toSet != g.exonIds.toSet).collect()
-    println(s"${corruptGenes.length} corrupt genes detected:")
-    corruptGenes.foreach(println)
-    val genes = dirtyGenes.filter(g => g.exons.map(_.exonId).toSet == g.exonIds.toSet)
-    println(s"Genes count: ${genes.count()}")
+  case class Exon(exonId: String, geneId: String, start: Long, end: Long, sequence: String) {
+    lazy val length = end - start + 1
+  }
+  case class Gene(geneId: String, chromosomeName: String, start: Long, end: Long, sequence: String, exons: Seq[Exon] = Nil, exonIds: Seq[String] = Nil) {
+    lazy val length = end - start + 1
+    lazy val exonsLength = exons.map(_.length).sum
   }
 
+  def getDataPath(args: Array[String]): String = {
+    if (!args.isEmpty) args(0) else {
+      println(s"Data folder was not specified, setting to default: ${DefaultDataPath}.")
+      println("""To specify data folder run as: sbt "run path/to/data" """)
+      DefaultDataPath
+    }
+  }
 
-  def getGenes(sc: SparkContext, genesFile: String, exonsFile: String) = {
-    val exons = getExons(sc, exonsFile)
-    val genes = getGenesWithoutExons(sc, genesFile)
+  def isValid(gene: Gene): Boolean  =  {
+    (gene.exons.map(_.exonId).toSet == gene.exonIds.toSet) || gene.exons.forall(exon => gene.sequence.contains(exon.sequence))
+  }
+
+  def getValidGenes(sc: SparkContext, dataPath: String, validator: Gene => Boolean = isValid) = getGenes(sc, dataPath).filter(validator(_))
+
+  def getGenes(sc: SparkContext, dataPath: String) = {
+    val exons = getExons(sc, s"$dataPath/$ExonsFileName")
+    val genes = getGenesWithoutExons(sc, s"$dataPath/$GenesFileName")
     val geneIdExons: RDD[(String, Iterable[Exon])] = exons.groupBy(_.geneId)
     genes
       .map(g => (g.geneId, g))
       .leftOuterJoin(geneIdExons)
-      .map{case (geneId, (gene, geneExons)) => (gene, geneExons.getOrElse(Nil).toSeq)}
-      .map{case (gene, geneExons) => gene.copy(exons = geneExons)}
+      .map { case (geneId, (gene, geneExons)) => (gene, geneExons.getOrElse(Nil).toSeq.sortBy(_.start)) }
+      .map { case (gene, geneExons) => gene.copy(exons = geneExons) }
   }
 
   def getGenesWithoutExons(sc: SparkContext, genesFile: String): RDD[Gene] = {
     sc.hadoopConfiguration.set("textinputformat.record.delimiter", ">")
     val rows = sc.textFile(genesFile).map(_.trim.replaceFirst("\n", "|").replace("\n", "")).filter(!_.isEmpty)
+    def geneId(cs: Array[String]) = cs(0)
+    def chrName(cs: Array[String]) = cs(1)
+    def geneStart(cs: Array[String]) = cs(2).toLong
+    def geneEnd(cs: Array[String]) = cs(3).toLong
+    def exonIds(cs: Array[String]) = cs(11).split(';').filter(!_.trim.isEmpty)
+    def geneSequence(cs: Array[String]) = cs(14)
+
     rows.map(row => {
       val cols = row.split('|')
-      val geneExonIds = cols(11).split(';').filter(!_.trim.isEmpty)
-      val seqence = cols(14)
-      Gene(geneId = cols(0), chromosomeName = cols(1), sequence = "", exonIds = geneExonIds)
+      Gene(geneId = geneId(cols), chromosomeName = chrName(cols), start = geneStart(cols), end = geneEnd(cols), sequence = geneSequence(cols), exonIds = exonIds(cols))
     })
   }
 
   def getExons(sc: SparkContext, exonsFile: String): RDD[Exon] = {
     sc.hadoopConfiguration.set("textinputformat.record.delimiter", ">")
     val rows = sc.textFile(exonsFile).map(_.trim.replaceFirst("\n", "|").replace("\n", "")).filter(!_.isEmpty)
+    def geneId(cs: Array[String]) = cs(0)
+    def exonId(cs: Array[String]) = cs(11)
+    def start(cs: Array[String]) = cs(12).toLong
+    def end(cs: Array[String]) = cs(13).toLong
+    def sequence(cs: Array[String]) = cs(14)
     rows.map(row => {
       val cols = row.split('|')
-      val seqence = cols(14)
-      Exon(geneId = cols(0), exonId = cols(11), sequence = "")
+      Exon(geneId = geneId(cols), exonId = exonId(cols), start = start(cols), end = end(cols), sequence = sequence(cols))
     })
   }
-
 }

@@ -2,7 +2,6 @@ package intron
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import DataChecks._
 
 object Data {
   val DefaultDataPath = "./data/"
@@ -17,16 +16,6 @@ object Data {
     lazy val exonsLength = exons.map(_.length).sum
   }
 
-  def main(args: Array[String]) {
-    val dataPath = getDataPath(args)
-    val sc = new SparkContext("local[4]", "intron-prediction")
-
-    val genes = refine(getGenes(sc, dataPath)).filter(_.exons.length == 1).filter(g => g.length != g.exonsLength).map(g => (g.length, g.exonsLength, g.exons.length))
-    genes.take(10).foreach(println)
-    println(s"!!!!!!!!!!!!!!!!Corrupt genes count: ${genes.count()}")
-    //genes.take(3).map(gene => (gene.sequence.indexOf(gene.exons.head.sequence), gene.exons.head.start, gene.start, gene)).foreach(println)
-  }
-
   def getDataPath(args: Array[String]): String = {
     if (!args.isEmpty) args(0) else {
       println(s"Data folder was not specified, setting to default: ${DefaultDataPath}.")
@@ -34,6 +23,12 @@ object Data {
       DefaultDataPath
     }
   }
+
+  def isValid(gene: Gene): Boolean  =  {
+    (gene.exons.map(_.exonId).toSet == gene.exonIds.toSet) || gene.exons.forall(exon => gene.sequence.contains(exon.sequence))
+  }
+
+  def getValidGenes(sc: SparkContext, dataPath: String, validator: Gene => Boolean = isValid) = getGenes(sc, dataPath).filter(validator(_))
 
   def getGenes(sc: SparkContext, dataPath: String) = {
     val exons = getExons(sc, s"$dataPath/$ExonsFileName")

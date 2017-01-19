@@ -19,11 +19,11 @@ class DataSpec extends FlatSpec with BeforeAndAfterAll {
   }
 
   "Data" should "get genes correctly" in {
-    assert(Data.getGenesWithoutExons(sc, GenesFilePath).count() == 11)
+    assert(Data.getGenesWithoutExons(sc, GenesFilePath).count() == 5)
   }
 
   "Data" should "get exons correctly" in {
-    assert(Data.getExons(sc, ExonsFilePath).count() == 16)
+    assert(Data.getExons(sc, ExonsFilePath).count() == 10)
   }
 
   "Data" should "be aligned between genes and exons" in {
@@ -34,5 +34,4 @@ class DataSpec extends FlatSpec with BeforeAndAfterAll {
       geneExons.forall(geneExon => gene.sequence.contains(geneExon.sequence))
     })
   }
-
 }

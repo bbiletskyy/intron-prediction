@@ -1,6 +1,5 @@
 package intron
 
-import intron.Data.Gene
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.NaiveBayes
 import org.apache.spark.mllib.linalg._

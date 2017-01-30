@@ -10,22 +10,18 @@ object Data {
   val DefaultExonsPath = DefaultDataPath + ExonsFileName
   val DefaultGenesPath = DefaultDataPath + GenesFileName
 
-  case class Exon(exonId: String, geneId: String, sequence: String)
-  case class Gene(geneId: String, exonIds: Seq[String] = Nil, exons: Seq[Exon] = Nil, sequence: String)
-
-  def getDataPath(args: Array[String]): String = {
-    if (!args.isEmpty) args(0) else {
-      println(s"Data folder was not specified, setting to default: ${DefaultDataPath}.")
-      println("""To specify data folder run as: sbt "run path/to/data" """)
-      DefaultDataPath
-    }
-  }
-
-  def isValid(gene: Gene): Boolean = {
+  def defaultValidator(gene: Gene): Boolean = {
     (gene.exons.map(_.exonId).toSet == gene.exonIds.toSet) || gene.exons.forall(exon => gene.sequence.contains(exon.sequence))
   }
 
-  def getValidGenes(sc: SparkContext, dataPath: String = DefaultDataPath, validator: Gene => Boolean = isValid) = getGenes(sc, dataPath).filter(validator(_))
+  /**
+   * Gets genes enriched with exons and filters out the genes that did not pass validation
+   * @param sc - [SparkContext]
+   * @param dataPath - path to data files, optional
+   * @param validator - custom validator for filtering out inconsistent data
+   * @return [RDD] of [Gene]
+   */
+  def getValidGenes(sc: SparkContext, dataPath: String = DefaultDataPath, validator: Gene => Boolean = defaultValidator) = getGenes(sc, dataPath).filter(validator(_))
 
   def getGenes(sc: SparkContext, dataPath: String = DefaultDataPath) = {
     val exons = getExons(sc, s"$dataPath/$ExonsFileName")
@@ -42,7 +38,7 @@ object Data {
     sc.hadoopConfiguration.set("textinputformat.record.delimiter", ">")
     val rows = sc.textFile(genesFile).map(_.trim.replaceFirst("\n", "|").replace("\n", "")).filter(!_.isEmpty)
     def geneId(cs: Array[String]) = cs(0)
-    def exonIds(cs: Array[String]) = cs(1).split(';').filter(!_.trim.isEmpty)
+    def exonIds(cs: Array[String]) = cs(1).split(';').filter(!_.trim.isEmpty).toList
     def geneSequence(cs: Array[String]) = cs(2)
 
     rows.map(row => {

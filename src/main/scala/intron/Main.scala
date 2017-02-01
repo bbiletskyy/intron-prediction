@@ -1,23 +1,20 @@
 package intron
 
-import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.ml.{Pipeline, Transformer}
-import org.apache.spark.ml.classification.{DecisionTreeClassifier, NaiveBayes}
+import org.apache.spark.ml._
+import org.apache.spark.ml.classification._
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
-
 
 /**
-  * Transforms genes into sliding frames, trains and predicts introns and exons using the methods:
-  * - Naive Bayes
-  * - Decision Tree
-  */
+ * Transforms genes into sliding frames, trains and predicts introns and exons using the methods:
+ * - Naive Bayes
+ * - Decision Tree
+ */
 object Main {
   //import org.apache.spark.sql.functions.udf
-  val featuresIndexer = udf{xs: Seq[String] => Vectors.dense(featureIndex(xs.head), xs.tail.map(x => featureIndex(x)) :_*)}
-  val labelIndexer = udf{y: String => labelIndex(y)}
+  //  val featuresIndexer = udf { xs: Seq[String] => Vectors.dense(featureIndex(xs.head), xs.tail.map(x => featureIndex(x)): _*) }
+  //  val labelIndexer = udf { y: String => labelIndex(y) }
 
   def main(args: Array[String]) {
     val spark: SparkSession = SparkSession
@@ -34,11 +31,15 @@ object Main {
     val frameRadius = 10
     val trainFrames = train.flatMap(gene => toFrames(gene, frameRadius))
       .toDF("features", "label")
-      .withColumn("indexedFeatures", featuresIndexer('features))
-      .withColumn("indexedLabel", labelIndexer('label))
       .cache()
     println(s"Using ${trainFrames.count()} frames for training  (${trainFrames.distinct().count()} unique frames), frame size is ${frameRadius * 2 + 1}")
 
+    val sequenceIndexer = new SequenceIndexer()
+      .setInputCol("features")
+      .setOutputCol("indexedFeatures")
+    val stringIndexer = new StringIndexer()
+      .setInputCol("label")
+      .setOutputCol("indexedLabel")
     val naiveBayes = new NaiveBayes()
       .setLabelCol("indexedLabel")
       .setFeaturesCol("indexedFeatures")
@@ -52,19 +53,16 @@ object Main {
       .setRawPredictionCol("DT-rawPrediction")
       .setProbabilityCol("DT-probability")
       .setMaxDepth(10)
-
-
-    val pipeline = new Pipeline().setStages(Array(naiveBayes, dt))
+    val pipeline = new Pipeline().setStages(Array(sequenceIndexer, stringIndexer, naiveBayes, dt))
     val model = pipeline.fit(trainFrames)
 
     val testFrames = test
       .flatMap(gene => toFrames(gene, frameRadius))
       .toDF("features", "label")
-      .withColumn("indexedFeatures", featuresIndexer('features))
-      .withColumn("indexedLabel", labelIndexer('label))
       .cache()
 
     val predictedFrames = model.transform(testFrames)
+
     predictedFrames
       .select("features", "indexedLabel", "NB-predicted", "DT-predicted")
       .show(truncate = false)
@@ -80,7 +78,7 @@ object Main {
 
     val predictedFramesCount = predictedFrames.count()
     val accuracyNB = evaluatorNB.evaluate(predictedFrames)
-    println(s"!!!!!!!Naive Bayes test error = ${(1.0 - accuracyNB)}"  )
+    println(s"!!!!!!!Naive Bayes test error = ${(1.0 - accuracyNB)}")
     val nBCorrect = predictedFrames.filter($"indexedLabel" === $"NB-predicted")
     println(s"!!!!!!!Naive Bayes correctly predicted ${nBCorrect.count()} out of $predictedFramesCount")
 

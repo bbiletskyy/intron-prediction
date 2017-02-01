@@ -23,13 +23,13 @@ package object intron {
   }
 
   val featureIndex: Map[String, Double] = Map(
-  "A" -> 0.0,
-  "C" -> 1.0,
-  "G" -> 2.0,
-  "T" -> 3.0,
-  "N" -> 4.0,
-  "F" -> 5.0,
-  FlankingSymbol -> 6.0
+    "A" -> 0.0,
+    "C" -> 1.0,
+    "G" -> 2.0,
+    "T" -> 3.0,
+    "N" -> 4.0,
+    "F" -> 5.0,
+    FlankingSymbol -> 6.0
   ).withDefaultValue(-1.0)
 
   val labelIndex: Map[String, Double] = Map(

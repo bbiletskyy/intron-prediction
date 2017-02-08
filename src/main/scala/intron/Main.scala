@@ -3,7 +3,7 @@ package intron
 import org.apache.spark.ml._
 import org.apache.spark.ml.classification._
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.StringIndexer
+import org.apache.spark.ml.feature._
 import org.apache.spark.sql._
 
 /**
@@ -12,10 +12,6 @@ import org.apache.spark.sql._
  * - Decision Tree
  */
 object Main {
-  //import org.apache.spark.sql.functions.udf
-  //  val featuresIndexer = udf { xs: Seq[String] => Vectors.dense(featureIndex(xs.head), xs.tail.map(x => featureIndex(x)): _*) }
-  //  val labelIndexer = udf { y: String => labelIndex(y) }
-
   def main(args: Array[String]) {
     val spark: SparkSession = SparkSession
       .builder()
